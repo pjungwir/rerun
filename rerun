@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: repeat [options] -- command [args...]
+
+Run a command multiple times.
+
+Options:
+  -t, --times N   Number of times to run (default: 1)
+  -f, --force     Continue on failure
+  -h, --help      Show this help
+EOF
+}
+
+times=1
+force=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -t|--times)
+      times="$2"
+      shift 2
+      ;;
+    -f|--force)
+      force=true
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [[ $# -eq 0 ]]; then
+  echo "No command specified" >&2
+  usage >&2
+  exit 1
+fi
+
+failures=0
+for ((i = 1; i <= times; i++)); do
+  if ! "$@"; then
+    ((failures++))
+    if [[ "$force" = false ]]; then
+      exit 1
+    fi
+  fi
+done
+
+exit $((failures > 0 ? 1 : 0))
